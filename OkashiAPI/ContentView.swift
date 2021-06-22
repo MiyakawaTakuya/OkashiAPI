@@ -11,6 +11,7 @@ struct ContentView: View {
     //OkashiDataを参照する状態変数
     //@ObservedObjectは@Stateと同じような役割ですが、複数のデータを外部ファイルと共有する場合に利用するという違いがある
     //データ取得用のOkashiDataクラスとお菓子検索画面でデータを共有したいので今回これを使う
+    //@ObservedObjectはこれが「更新情報を受け取るオブジェクト」であることを示している
     @ObservedObject var okashiDataList = OkashiData()
     //入力された文字列を保持する状態変数
     @State var inputText = ""
@@ -24,7 +25,20 @@ struct ContentView: View {
             TextField("キーワードを入力してください",text: $inputText, onCommit: {
                 //入力完了後に検索をする
                 okashiDataList.searchOkashi(keyword: inputText)
-            })
+            }) //検索バーここまで
+            .padding()  //上下左右に余白を開ける
+            
+            //お菓子の検索結果を表示
+            List(okashiDataList.okashiList){okashi in
+                //okashiに要素を取り出してListを生成
+                HStack{
+                    Image(uiImage:okashi.image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 40)
+                    Text(okashi.name)
+                }
+            }//お菓子リストここまで
         }//VStackここまで
 
     }

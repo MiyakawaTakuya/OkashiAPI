@@ -7,6 +7,24 @@
 
 import Foundation
 
+//UIKitのUIImageを利用するためにインポートする
+//UIImage はアプリ内の画像データを管理するオブジェクト
+import UIKit
+
+//identifiableプロトコルを利用してお菓子の情報をまとめる構造体
+//identifiableプロトコルに準拠すると一意に識別できる型として定義することができる
+//identifiableを指定するとデータを一意に特定するためにidと呼ばれるプロパティを定義する必要がある
+struct OkashiItem: Identifiable {
+    //UUID(universally unique identifier)を用いてランダムな一意の値を生成
+    let id = UUID()
+    //その他に　お菓子の名前URL画像を格納できるように定数として宣言する
+    //取得したデータは往診しないので定数として宣言する
+    //letとvarをしっかりと使い分けられるようにする 予期せぬバグを防ぐことができる
+    let name:String
+    let link:URL
+    let image:UIImage
+}
+
 //お菓子データ検索用のクラス
 //
 class OkashiData: ObservableObject{
@@ -28,6 +46,14 @@ class OkashiData: ObservableObject{
         //?を付与してnilを許容するオプショナル型として宣言している
         let item:[Item]? //複数要素 letなので再代入は不可
     }
+    
+    //定義したお菓子データをまとめる構造体を複数保持できるように配列として変数を定義していく
+    //お菓子のリスト (Identifiableプロトコル)
+    //=[]として複数構造体を保持できるよう配列を作成
+    //@Publishedを付与することでプロパティを監視して自動通知をすることができる
+    //外部のクラウや構造体からこの[OkashiItem]を参照した時、それらのオブジェクトに更新情報が送られるようになる
+    //[OkashiItem]の値が更新されたということが利用する側でわかる
+    @Published var okashiList:[OkashiItem] = []
     
     //Web API検索用のメソッド 第一引数：keyword 検索したいわーど
     //keywordが引数でStringがデータ型で文字列型を示している
@@ -89,7 +115,38 @@ class OkashiData: ObservableObject{
                 //受け取ったJSONデータをパース ()解析して格納
                 //decoder.decodeで取得したJSONデータ(data!)をパースして構造体ResultJsonのデータ構造に合わせて、変数jsonに格納する
                 let json = try decoder.decode(ResultJson.self,from:data!)
-                print(json)
+                //                print(json)
+                
+                //お菓子データを配列に詰め込む(↑ではデコード後に一括して格納された状態)
+                //これから取り出しやすくするために配列して整理して詰め込み直す
+                
+                //お菓子の情報が取得できているか確認
+                //if let文でお菓子データが存在するときにitemsにコピーして次の処理を行う
+                if let items = json.item {
+                    //お菓子リストの初期化
+                    //selfは自分自身を参照するプロパティ class内のクロージャは、参照型のため循環参照が発生する可能性がある
+                    //循環参照とは相互の情報を参照し合うループ状態を指す。そのためselfで特定する.
+                    self.okashiList.removeAll()
+                    //取得しているお菓子の数だけ処理
+                    //itemsは配列
+                    //for-in文を用いて1要素(1つのお菓子データ)ずつitemに取り出して処理を行う
+                    for item in items {
+                        //お菓子の名称,掲載URL、画像URLをアンラップ
+                        //カンマで繋げて４つの項目に全てに値がある場合に変数に代入して次の処理を行う
+                        if let name = item.name ,//値があれば次のカンマ以降のコードを実行
+                           let link = item.url ,//値があれば次のカンマ以降のコードを実行
+                           let imageUrl = item.image ,//値が無ければ、次の行のデータの処理を移す
+                           let imageData = try? Data(contentsOf: imageUrl) ,
+                           let image = UIImage(data: imageData)?.withRenderingMode(.alwaysOriginal){
+                            //一つのお菓子の構造体をまとめて管理
+                            let okashi = OkashiItem(name: name, link: link,image: image)
+                            //お菓子の配列へ追加
+                            //appendメソッドでデータの追加
+                            self.okashiList.append(okashi)
+                        }
+                    }
+                    print(self.okashiList)
+                }
                 
             } catch { //エラー処理
                 print("エラーが出ました")
