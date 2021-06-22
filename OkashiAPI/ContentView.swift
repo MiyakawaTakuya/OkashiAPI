@@ -8,11 +8,30 @@
 import SwiftUI
 
 struct ContentView: View {
+    //OkashiDataを参照する状態変数
+    //@ObservedObjectは@Stateと同じような役割ですが、複数のデータを外部ファイルと共有する場合に利用するという違いがある
+    //データ取得用のOkashiDataクラスとお菓子検索画面でデータを共有したいので今回これを使う
+    @ObservedObject var okashiDataList = OkashiData()
+    //入力された文字列を保持する状態変数
+    @State var inputText = ""
+    
     var body: some View {
-        Text("Hello, world!")
-            .padding()
+        VStack {
+            //文字を受け取るTextFieldを表示する
+            //一つ目の引数はプレースホルダー(入力欄に表示するメッセージ)
+            //二つ目の引数のtextは@Stateで宣言した状態変数に$を接頭辞として指定することで状態変数の値を参照渡しすることができる
+            //三つ目の引数は、入力が確定したタイミングで実行する処理をクロージャ{}でかく。
+            TextField("キーワードを入力してください",text: $inputText, onCommit: {
+                //入力完了後に検索をする
+                okashiDataList.searchOkashi(keyword: inputText)
+            })
+        }//VStackここまで
+
     }
 }
+//ATSの設定を変更すること
+//iOSアプリとインターネットを安全に接続するための設定で
+//これが初期設定では有効になっているので無効に変更する
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
